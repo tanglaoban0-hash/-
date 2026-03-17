@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唐老板的第一个网站</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .highlight {
+            color: #667eea;
+        }
+        
+        p {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            border: none;
+            font-size: 1.1em;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .info h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .info ul {
+            color: #666;
+            padding-left: 20px;
+        }
+        
+        .info li {
+            margin-bottom: 8px;
+        }
+        
+        #message {
+            margin-top: 20px;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 10px;
+            color: #155724;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 <span class="highlight">恭喜唐老板</span></h1>
+        <p>你的网站成功运行了！这就是 Live Server 的效果。</p>
+        <p>你可以试着修改这段文字，保存后看看浏览器会不会自动刷新。</p>
+        
+        <button class="btn" onclick="showMessage()">点我试试</button>
+        
+        <div id="message">
+            ✅ JavaScript 也正常工作！你能点击按钮，说明交互功能没问题。
+        </div>
+        
+        <div class="info">
+            <h3>📋 这个页面包含：</h3>
+            <ul>
+                <li>HTML 结构（文字、按钮、布局）</li>
+                <li>CSS 样式（颜色、渐变、动画效果）</li>
+                <li>JavaScript 交互（点击按钮弹出提示）</li>
+                <li>响应式设计（手机电脑都能看）</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function showMessage() {
+            const msg = document.getElementById('message');
+            msg.style.display = 'block';
+            msg.style.animation = 'fadeIn 0.5s ease';
+        }
+    </script>
+</body>
+</html>
