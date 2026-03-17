@@ -1,0 +1,463 @@
+[index.html](https://github.com/user-attachments/files/26055505/index.html)
+[index.html](https://github.com/user-attachments/files/26055505/index.html)
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唐老板 - 会员中心</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #0f172a;
+            --bg-light: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass: rgba(30, 41, 59, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .form-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.3s;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .user-panel {
+            text-align: center;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 20px;
+        }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid yellow;
+            border-radius: 8px;
+            font-size: 12px;
+            color: yellow;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="authForm" class="form-card">
+            <div class="logo">
+                <h1>唐老板</h1>
+                <p>欢迎访问会员中心</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('login')">登录</button>
+                <button class="tab" onclick="switchTab('register')">注册</button>
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入密码" required>
+                </div>
+                <button type="submit" class="btn" id="loginBtn">登录</button>
+            </form>
+
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="registerEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="至少6位密码" required>
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" id="confirmPassword" placeholder="再次输入密码" required>
+                </div>
+                <button type="submit" class="btn" id="registerBtn">注册</button>
+            </form>
+
+            <div id="debugInfo" class="debug-info"></div>
+        </div>
+
+        <div id="userPanel" class="form-card hidden">
+            <div class="user-panel">
+                <div class="user-avatar">👤</div>
+                <div id="userEmail" style="font-size: 18px; margin-bottom: 10px;"></div>
+                <div style="color: var(--success); margin-bottom: 20px;">✅ 已登录</div>
+                <button class="btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQGBmwoKpiPIEGougRDjBDzxQyipbHHBM",
+            authDomain: "tanglaoban-site-6a782.firebaseapp.com",
+            projectId: "tanglaoban-site-6a782",
+            storageBucket: "tanglaoban-site-6a782.firebasestorage.app",
+            messagingSenderId: "372272969372",
+            appId: "1:372272969372:web:420654e1de4354782c5f59",
+            measurementId: "G-YKFM5M6TK6"
+        };
+
+        // 显示调试信息
+        function showDebug(msg) {
+            const debug = document.getElementById('debugInfo');
+            debug.style.display = 'block';
+            debug.innerHTML += msg + '<br>';
+            console.log(msg);
+        }
+
+        // 初始化 Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            showDebug('✅ Firebase 初始化成功');
+        } catch (e) {
+            showDebug('❌ Firebase 初始化失败: ' + e.message);
+        }
+
+        const auth = firebase.auth();
+
+        // 监听认证状态
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showDebug('✅ 用户已登录: ' + user.email);
+                showUserPanel(user);
+            } else {
+                showDebug('ℹ️ 用户未登录');
+                showAuthForm();
+            }
+        }, (error) => {
+            showDebug('❌ 认证状态错误: ' + error.message);
+        });
+
+        // 切换标签
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+            } else {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
+            }
+            hideMessage();
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+        }
+
+        function hideMessage() {
+            document.getElementById('message').className = 'message';
+        }
+
+        function showUserPanel(user) {
+            document.getElementById('authForm').classList.add('hidden');
+            document.getElementById('userPanel').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = user.email;
+        }
+
+        function showAuthForm() {
+            document.getElementById('authForm').classList.remove('hidden');
+            document.getElementById('userPanel').classList.add('hidden');
+        }
+
+        // 注册
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showDebug('📝 开始注册...');
+            
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.textContent = '注册中...';
+
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (password !== confirm) {
+                showMessage('两次输入的密码不一致', 'error');
+                showDebug('❌ 密码不匹配');
+                btn.disabled = false;
+                btn.textContent = '注册';
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('密码至少需要6位', 'error');
+                showDebug('❌ 密码太短');
+                btn.disabled = false;
+                btn.textContent = '注册';
+                return;
+            }
+
+            showDebug('📧 邮箱: ' + email);
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showDebug('✅ 注册成功!');
+                    showMessage('注册成功！已自动登录', 'success');
+                })
+                .catch((error) => {
+                    showDebug('❌ 注册错误: ' + error.code + ' - ' + error.message);
+                    let errorMsg = '注册失败：';
+                    switch(error.code) {
+                        case 'auth/email-already-in-use':
+                            errorMsg += '该邮箱已被注册';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMsg += '邮箱格式不正确';
+                            break;
+                        case 'auth/weak-password':
+                            errorMsg += '密码太弱，至少6位';
+                            break;
+                        case 'auth/network-request-failed':
+                            errorMsg += '网络错误，请检查网络连接';
+                            break;
+                        default:
+                            errorMsg += error.message;
+                    }
+                    showMessage(errorMsg, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '注册';
+                });
+        });
+
+        // 登录
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showDebug('🔑 开始登录...');
+            
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showDebug('✅ 登录成功!');
+                    showMessage('登录成功！', 'success');
+                })
+                .catch((error) => {
+                    showDebug('❌ 登录错误: ' + error.code + ' - ' + error.message);
+                    let errorMsg = '登录失败：';
+                    switch(error.code) {
+                        case 'auth/user-not-found':
+                            errorMsg += '该邮箱未注册';
+                            break;
+                        case 'auth/wrong-password':
+                            errorMsg += '密码错误';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMsg += '邮箱格式不正确';
+                            break;
+                        case 'auth/network-request-failed':
+                            errorMsg += '网络错误';
+                            break;
+                        default:
+                            errorMsg += error.message;
+                    }
+                    showMessage(errorMsg, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '登录';
+                });
+        });
+
+        // 退出
+        function logout() {
+            showDebug('🚪 退出登录...');
+            auth.signOut().then(() => {
+                showDebug('✅ 已退出');
+            }).catch((error) => {
+                showDebug('❌ 退出错误: ' + error.message);
+            });
+        }
+
+        // 页面加载完成
+        showDebug('🚀 页面加载完成，等待 Firebase...');
+    </script>
+</body>
+</html>
