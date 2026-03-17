@@ -1,0 +1,479 @@
+[会员中心-index.html](https://github.com/user-attachments/files/26052613/-index.html)
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唐老板 - 会员中心</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #0f172a;
+            --bg-light: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass: rgba(30, 41, 59, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* 表单卡片 */
+        .form-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* 标签切换 */
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.3s;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* 输入框 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* 按钮 */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 消息提示 */
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            display: block;
+        }
+
+        /* 分隔线 */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            padding: 0 16px;
+        }
+
+        /* 用户面板 */
+        .user-panel {
+            text-align: center;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 20px;
+        }
+
+        .user-email {
+            font-size: 16px;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+
+        .user-status {
+            color: var(--success);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 隐藏元素 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* 加载动画 */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 未登录状态 -->
+        <div id="authForm" class="form-card">
+            <div class="logo">
+                <h1>唐老板</h1>
+                <p>欢迎访问会员中心</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('login')">登录</button>
+                <button class="tab" onclick="switchTab('register')">注册</button>
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <!-- 登录表单 -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入密码" required>
+                </div>
+                <button type="submit" class="btn" id="loginBtn">
+                    登录
+                </button>
+            </form>
+
+            <!-- 注册表单 -->
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="registerEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="至少6位密码" required>
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" id="confirmPassword" placeholder="再次输入密码" required>
+                </div>
+                <button type="submit" class="btn" id="registerBtn">
+                    注册
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>或使用</span>
+            </div>
+
+            <button class="btn btn-secondary" onclick="signInWithGoogle()">
+                Google 账号登录
+            </button>
+        </div>
+
+        <!-- 已登录状态 -->
+        <div id="userPanel" class="form-card hidden">
+            <div class="user-panel">
+                <div class="user-avatar">👤</div>
+                <div class="user-email" id="userEmail"></div>
+                <div class="user-status">✅ 已登录</div>
+                <button class="btn" onclick="logout()">
+                    退出登录
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQGBmwoKpiPIEGougRDjBDzxQyipbHHBM",
+            authDomain: "tanglaoban-site-6a782.firebaseapp.com",
+            projectId: "tanglaoban-site-6a782",
+            storageBucket: "tanglaoban-site-6a782.firebasestorage.app",
+            messagingSenderId: "372272969372",
+            appId: "1:372272969372:web:420654e1de4354782c5f59",
+            measurementId: "G-YKFM5M6TK6"
+        };
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // 页面加载时检查登录状态
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showUserPanel(user);
+            } else {
+                showAuthForm();
+            }
+        });
+
+        // 切换标签
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.tab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            if (tab === 'login') {
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+            }
+            hideMessage();
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+        }
+
+        function hideMessage() {
+            document.getElementById('message').className = 'message';
+        }
+
+        // 显示用户面板
+        function showUserPanel(user) {
+            document.getElementById('authForm').classList.add('hidden');
+            document.getElementById('userPanel').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = user.email;
+        }
+
+        // 显示登录表单
+        function showAuthForm() {
+            document.getElementById('authForm').classList.remove('hidden');
+            document.getElementById('userPanel').classList.add('hidden');
+        }
+
+        // 邮箱+密码登录
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.innerHTML = '登录中<span class="spinner"></span>';
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showMessage('登录成功！', 'success');
+            } catch (error) {
+                showMessage('登录失败：' + error.message, 'error');
+                btn.disabled = false;
+                btn.textContent = '登录';
+            }
+        });
+
+        // 邮箱+密码注册
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.innerHTML = '注册中<span class="spinner"></span>';
+
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (password !== confirm) {
+                showMessage('两次输入的密码不一致', 'error');
+                btn.disabled = false;
+                btn.textContent = '注册';
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('密码至少需要6位', 'error');
+                btn.disabled = false;
+                btn.textContent = '注册';
+                return;
+            }
+
+            try {
+                await auth.createUserWithEmailAndPassword(email, password);
+                showMessage('注册成功！', 'success');
+            } catch (error) {
+                showMessage('注册失败：' + error.message, 'error');
+                btn.disabled = false;
+                btn.textContent = '注册';
+            }
+        });
+
+        // Google 登录
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch((error) => {
+                showMessage('Google登录失败：' + error.message, 'error');
+            });
+        }
+
+        // 退出登录
+        function logout() {
+            auth.signOut();
+        }
+    </script>
+</body>
+</html>
