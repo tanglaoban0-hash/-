@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.9">
+<title>OKX模拟交易所 - 首页+交易一体化</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+body {
+  background: #0A0B10;
+  color: #F5F5F5;
+  font-size: 14px;
+}
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* 导航 */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: #131620;
+  border-bottom: 1px solid #1e2434;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 9999;
+}
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+.logo span {
+  color: #407BFF;
+}
+.menu {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+}
+.menu a {
+  color: #e0e0e0;
+  font-size: 15px;
+}
+.menu a:hover {
+  color: #407BFF;
+}
+.user {
+  display: flex;
+  gap: 10px;
+}
+.login-btn, .reg-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+}
+.login-btn {
+  background: transparent;
+  border: 1px solid #407BFF;
+  color: #407BFF;
+}
+.reg-btn {
+  background: #407BFF;
+  color: #fff;
+}
+
+/* 主页容器 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  margin-top: 80px;
+}
+
+/* Banner */
+.banner {
+  height: 380px;
+  background: linear-gradient(90deg, #101420, #1a2236);
+  border-radius: 16px;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 60px;
+}
+.banner-text h1 {
+  font-size: 42px;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.banner-text p {
+  font-size: 16px;
+  color: #aaa;
+  margin-bottom: 24px;
+}
+.trade-btn {
+  padding: 14px 28px;
+  background: #407BFF;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* 产品模块 */
+.section {
+  margin-bottom: 40px;
+}
+.section-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.card-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.card {
+  background: #131620;
+  border-radius: 14px;
+  padding: 20px;
+}
+.card h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.card p {
+  color: #888;
+  margin-bottom: 12px;
+}
+.go-trade {
+  padding: 10px 16px;
+  background: #1c2333;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* 行情 */
+.market {
+  background: #131620;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.market-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  padding: 16px 20px;
+  color: #888;
+}
+.market-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  padding: 16px 20px;
+  border-top: 1px solid #1e2434;
+  align-items: center;
+}
+.coin .name {
+  font-weight: 500;
+}
+.up { color: #02C076; }
+.down { color: #F24B4B; }
+
+/* 底部 */
+.footer {
+  background: #131620;
+  padding: 40px 20px;
+  margin-top: 60px;
+}
+.foot-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+.foot-col h4 {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+.foot-col a {
+  display: block;
+  color: #888;
+  margin-bottom: 10px;
+}
+.copyright {
+  text-align: center;
+  color: #666;
+  margin-top: 40px;
+}
+
+/* —————————— 交易页面样式 —————————— */
+#tradePage {
+  display: none;
+  padding: 10px;
+  max-width: 1400px;
+  margin: 70px auto 0;
+}
+.trade-container {
+  display: grid;
+  grid-template-columns: 1fr 330px 390px;
+  gap: 10px;
+}
+@media (max-width:1024px) {
+  .trade-container { grid-template-columns: 1fr; }
+}
+.kline-area {
+  background: #131620;
+  border-radius: 12px;
+  padding: 12px;
+  height: 520px;
+}
+#kline { width: 100%; height: 100%; }
+
+.depth-order {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.depth-box {
+  background: #131620;
+  border-radius: 12px;
+  padding: 12px;
+  height: 250px;
+}
+#depth { width: 100%; height: 100%; }
+.order-book {
+  background: #131620;
+  border-radius: 12px;
+  padding: 12px;
+  height: 260px;
+  overflow-y: auto;
+}
+.book-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 3px 0;
+  color: #aaa;
+}
+.bid { color: #02C076; }
+.ask { color: #F24B4B; }
+
+.trade-panel {
+  background: #131620;
+  border-radius: 12px;
+  padding: 18px;
+}
+.trade-tab {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: #1B1F2E;
+  border: none;
+  border-radius: 8px;
+  color: #aaa;
+  cursor: pointer;
+}
+.tab-btn.active {
+  background: #407BFF;
+  color: #fff;
+}
+.input-item {
+  margin-bottom: 12px;
+}
+.input-item label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #aaa;
+}
+.input-item input, .input-item select {
+  width: 100%;
+  padding: 10px;
+  background: #1B1F2E;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+}
+.btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.btn-long {
+  flex: 1;
+  padding: 12px;
+  background: #02C076;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-short {
+  flex: 1;
+  padding: 12px;
+  background: #F24B4B;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.asset-box {
+  background: #131620;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 10px 0;
+}
+.asset-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.asset-val {
+  color: #407BFF;
+  font-weight: 500;
+}
+#recharge {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  background: #407BFF;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.pair-tab {
+  display: flex;
+  gap: 8px;
+  background: #131620;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+.pair-tab button {
+  padding: 6px 12px;
+  background: #1B1F2E;
+  border: none;
+  border-radius: 8px;
+  color: #ccc;
+  cursor: pointer;
+}
+.pair-tab button.active {
+  background: #407BFF;
+  color: #fff;
+}
+
+.bottom-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.order-list, .position-list {
+  background: #131620;
+  border-radius: 12px;
+  padding: 14px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.item {
+  padding: 8px;
+  border-bottom: 1px solid #1B1F2E;
+  font-size: 12px;
+}
+.item button {
+  float: right;
+  background: #407BFF;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* 弹窗 */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal-box {
+  background: #131620;
+  border-radius: 12px;
+  padding: 24px;
+  width: 360px;
+}
+.modal-box input {
+  width: 100%;
+  padding: 12px;
+  background: #1B1F2E;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.modal-box button {
+  width: 100%;
+  padding: 12px;
+  background: #407BFF;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+}
+.hide { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- —————————— 顶部导航 —————————— -->
+<div class="nav">
+  <div class="logo" onclick="goHome()">OKX <span>模拟</span></div>
+  <div class="menu">
+    <a onclick="goHome()">首页</a>
+    <a onclick="goTrade()">币币</a>
+    <a onclick="goTrade()">合约</a>
+    <a>行情</a>
+    <a>资产</a>
+  </div>
+  <div class="user">
+    <button class="login-btn" id="openLogin">登录</button>
+    <button class="reg-btn" id="openReg">注册</button>
+  </div>
+</div>
+
+<!-- —————————— 首页 —————————— -->
+<div id="homePage" class="container">
+  <div class="banner">
+    <div class="banner-text">
+      <h1>全球领先的<br>加密资产模拟交易平台</h1>
+      <p>零风险练习交易，K线、深度盘口、合约全功能模拟</p>
+      <button class="trade-btn" onclick="goTrade()">立即模拟交易</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">模拟交易产品</div>
+    <div class="card-box">
+      <div class="card">
+        <h3>币币交易</h3>
+        <p>实时K线、深度盘口、零成本模拟练单</p>
+        <button class="go-trade" onclick="goTrade()">前往交易</button>
+      </div>
+      <div class="card">
+        <h3>永续合约</h3>
+        <p>1-100倍杠杆，多空双向，专业模拟环境</p>
+        <button class="go-trade" onclick="goTrade()">合约大厅</button>
+      </div>
+      <div class="card">
+        <h3>新手练习</h3>
+        <p>注册送10000 USDT，零风险体验交易所</p>
+        <button class="go-trade" onclick="goTrade()">开始练习</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">实时行情</div>
+    <div class="market">
+      <div class="market-head">
+        <div>币种</div><div>价格</div><div>24h涨跌幅</div><div>操作</div>
+      </div>
+      <div class="market-item">
+        <div class="coin"><div class="name">BTC/USDT</div></div>
+        <div>70125.6</div>
+        <div class="up">+2.34%</div>
+        <div><button class="go-trade" style="width:auto;padding:6px 12px" onclick="goTrade()">交易</button></div>
+      </div>
+      <div class="market-item">
+        <div class="coin"><div class="name">ETH/USDT</div></div>
+        <div>3782.4</div>
+        <div class="up">+1.56%</div>
+        <div><button class="go-trade" style="width:auto;padding:6px 12px" onclick="goTrade()">交易</button></div>
+      </div>
+      <div class="market-item">
+        <div class="coin"><div class="name">SOL/USDT</div></div>
+        <div>118.32</div>
+        <div class="down">-0.87%</div>
+        <div><button class="go-trade" style="width:auto;padding:6px 12px" onclick="goTrade()">交易</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- —————————— 交易页面 —————————— -->
+<div id="tradePage">
+  <div class="pair-tab">
+    <button class="active" data-p="BTC">BTC/USDT</button>
+    <button data-p="ETH">ETH/USDT</button>
+    <button data-p="SOL">SOL/USDT</button>
+  </div>
+
+  <div class="asset-box">
+    <div class="asset-row"><span>总资产</span><span id="total" class="asset-val">0.00</span></div>
+    <div class="asset-row"><span>可用</span><span id="avail" class="asset-val">0.00</span></div>
+    <div class="asset-row"><span>未实现盈亏</span><span id="pnl" class="asset-val">0.00</span></div>
+    <div class="asset-row"><span>强平价格</span><span id="liq" class="asset-val">--</span></div>
+    <button id="recharge">模拟充值 10000 USDT</button>
+  </div>
+
+  <div class="trade-container">
+    <div class="kline-area"><div id="kline"></div></div>
+    <div class="depth-order">
+      <div class="depth-box"><div id="depth"></div></div>
+      <div class="order-book">
+        <div style="margin-bottom:8px">深度盘口</div>
+        <div id="book"></div>
+      </div>
+    </div>
+    <div class="trade-panel">
+      <div class="trade-tab">
+        <button class="tab-btn active" data-m="spot">现货</button>
+        <button class="tab-btn" data-m="contract">合约</button>
+      </div>
+      <div class="input-item">
+        <label>当前价格</label>
+        <input type="number" id="price" readonly>
+      </div>
+      <div class="input-item">
+        <label>数量</label>
+        <input type="number" id="amount" value="0.001" step="0.001">
+      </div>
+      <div class="input-item" id="levWrap" style="display:none">
+        <label>杠杆倍数</label>
+        <select id="lev">
+          <option>1</option><option>5</option><option>10</option><option>20</option><option>50</option><option>100</option>
+        </select>
+      </div>
+      <div class="btns">
+        <button class="btn-long" id="longBtn">买入 / 开多</button>
+        <button class="btn-short" id="shortBtn">卖出 / 开空</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-wrap">
+    <div class="order-list">
+      <div style="margin-bottom:10px">订单记录</div>
+      <div id="orders"></div>
+    </div>
+    <div class="position-list">
+      <div style="margin-bottom:10px">当前持仓</div>
+      <div id="positions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- —————————— 登录注册弹窗 —————————— -->
+<div class="modal hide" id="loginModal">
+  <div class="modal-box">
+    <h3>登录</h3>
+    <input id="loginUser" placeholder="账号">
+    <input id="loginPwd" type="password" placeholder="密码">
+    <button id="doLogin">登录</button>
+  </div>
+</div>
+<div class="modal hide" id="regModal">
+  <div class="modal-box">
+    <h3>注册</h3>
+    <input id="regUser" placeholder="账号">
+    <input id="regPwd" type="password" placeholder="密码">
+    <button id="doReg">注册</button>
+  </div>
+</div>
+
+<!-- —————————— 底部 —————————— -->
+<div class="footer">
+  <div class="foot-wrap">
+    <div class="foot-col"><h4>新手入门</h4><a>注册教程</a><a>模拟交易</a><a>充值</a></div>
+    <div class="foot-col"><h4>产品</h4><a>现货</a><a>合约</a><a>行情</a></div>
+    <div class="foot-col"><h4>关于</h4><a>模拟平台</a><a>免责声明</a><a>风险提示</a></div>
+    <div class="foot-col"><h4>服务</h4><a>使用指南</a><a>交易规则</a><a>联系我们</a></div>
+  </div>
+  <div class="copyright">© 2025 OKX模拟交易所 仅用于学习练习</div>
+</div>
+
+<script>
+// 页面切换
+function goHome() {
+  document.getElementById("homePage").style.display = "block";
+  document.getElementById("tradePage").style.display = "none";
+}
+function goTrade() {
+  document.getElementById("homePage").style.display = "none";
+  document.getElementById("tradePage").style.display = "block";
+  if (!inited) initTrade();
+}
+
+let user = null;
+let current = "BTC";
+let prices = { BTC: 70200, ETH: 3780, SOL: 118 };
+let price = prices[current];
+let mode = "spot";
+let kdata = [];
+let inited = false;
+
+const kChart = echarts.init(document.getElementById("kline"));
+const dChart = echarts.init(document.getElementById("depth"));
+
+function initTrade() {
+  if (inited) return;
+  inited = true;
+  initK();
+  renderDepth();
+  loadUser();
+  setInterval(autoUpdate, 2800);
+  window.onresize = () => { kChart.resize(); dChart.resize(); };
+}
+
+function initK() {
+  let t = Date.now();
+  kdata = [];
+  for (let i = 0; i < 60; i++) {
+    let p = price + (Math.random() - 0.5) * 300;
+    kdata.push([t - (60 - i) * 60000, p, p + 200, p - 200, p + 100]);
+  }
+  renderK();
+}
+
+function renderK() {
+  kChart.setOption({
+    grid: { left: 10, right: 10, top: 10, bottom: 10 },
+    xAxis: { type: "time" },
+    yAxis: { scale: true },
+    series: [{ type: "candlestick", data: kdata }]
+  });
+}
+
+function renderDepth() {
+  let bids = [], asks = [];
+  for (let i = 1; i <= 12; i++) {
+    bids.push([price - i * 25, Math.random() * 0.7 + 0.1]);
+    asks.push([price + i * 25, Math.random() * 0.7 + 0.1]);
+  }
+  dChart.setOption({
+    grid: { left: 5, right: 5, top: 5, bottom: 5 },
+    xAxis: { type: "value" },
+    yAxis: { type: "value" },
+    series: [
+      { type: "bar", name: "买", data: bids, itemStyle: { color: "#02C076" } },
+      { type: "bar", name: "卖", data: asks, itemStyle: { color: "#F24B4B" } }
+    ]
+  });
+  let book = document.getElementById("book");
+  let html = "";
+  for (let i = 10; i >= 1; i--) {
+    html += `<div class="book-item"><span class="bid">${(price - i * 25).toFixed(1)}</span><span>${(Math.random() * 0.5 + 0.05).toFixed(3)}</span></div>`;
+  }
+  html += `<div style="text-align:center;color:#407BFF;margin:6px 0">${price.toFixed(0)}</div>`;
+  for (let i = 1; i <= 10; i++) {
+    html += `<div class="book-item"><span class="ask">${(price + i * 25).toFixed(1)}</span><span>${(Math.random() * 0.5 + 0.05).toFixed(3)}</span></div>`;
+  }
+  book.innerHTML = html;
+}
+
+function autoUpdate() {
+  price = Math.max(price * 0.93, Math.min(price * 1.07, price + (Math.random() - 0.5) * 100));
+  document.getElementById("price").value = price.toFixed(2);
+  kdata.push([Date.now(), price, price + 150, price - 150, price + 50]);
+  if (kdata.length > 100) kdata.shift();
+  renderK();
+  renderDepth();
+  calcPnl();
+  refresh();
+}
+
+function loadUser() {
+  let u = localStorage.getItem("okx_full");
+  if (u) {
+    user = JSON.parse(u);
+    refresh();
+  }
+}
+
+function saveUser() {
+  localStorage.setItem("okx_full", JSON.stringify(user));
+}
+
+function refresh() {
+  if (!user) return;
+  document.getElementById("avail").innerText = user.asset.available.toFixed(2);
+  calcPnl();
+  renderOrders();
+  renderPositions();
+}
+
+function calcPnl() {
+  if (!user) return;
+  let totalPnl = 0;
+  user.positions.forEach(p => {
+    let pl = p.dir === "long" ? (price - p.price) * p.amount * p.lev : (p.price - price) * p.amount * p.lev;
+    p.pnl = pl; totalPnl += pl;
+  });
+  user.pnl = totalPnl;
+  document.getElementById("pnl").innerText = totalPnl.toFixed(2);
+  document.getElementById("total").innerText = (user.asset.available + totalPnl).toFixed(2);
+  document.getElementById("liq").innerText = user.positions.length ? (price * 0.65).toFixed(0) : "--";
+}
+
+function renderOrders() {
+  let dom = document.getElementById("orders");
+  dom.innerHTML = user.orders.map((o, i) => `<div class="item">${o.time} ${o.type} ${o.dir}<br>${o.amount} @ ${o.price.toFixed(1)}</div>`).join("");
+}
+
+function renderPositions() {
+  let dom = document.getElementById("positions");
+  dom.innerHTML = user.positions.map((p, i) => `<div class="item">${p.dirText} ${p.amount} ${p.lev}x<br>盈亏: ${p.pnl.toFixed(2)}<button onclick="closePos(${i})">平仓</button></div>`).join("");
+}
+
+function closePos(index) {
+  if (!user) return;
+  let p = user.positions[index];
+  user.asset.available += p.amount * p.price / p.lev + p.pnl;
+  user.orders.unshift({ time: new Date().toLocaleTimeString(), type: "平仓", dir: p.dirText, amount: p.amount, price: price });
+  user.positions.splice(index, 1);
+  saveUser(); refresh();
+}
+
+// 充值
+document.getElementById("recharge").onclick = () => {
+  if (!user) return alert("请先登录");
+  user.asset.available += 10000; saveUser(); refresh();
+};
+
+// 币种切换
+document.querySelectorAll(".pair-tab button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".pair-tab button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    current = b.dataset.p;
+    price = prices[current];
+    initK(); renderDepth();
+  };
+});
+
+// 现货/合约切换
+document.querySelectorAll(".tab-btn").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    mode = b.dataset.m;
+    document.getElementById("levWrap").style.display = mode === "contract" ? "block" : "none";
+  };
+});
+
+// 登录注册
+document.getElementById("openLogin").onclick = () => { document.getElementById("loginModal").classList.remove("hide"); };
+document.getElementById("openReg").onclick = () => { document.getElementById("regModal").classList.remove("hide"); };
+
+document.getElementById("doReg").onclick = () => {
+  let u = document.getElementById("regUser").value.trim();
+  let p = document.getElementById("regPwd").value.trim();
+  if (!u || !p) return alert("请输入完整");
+  user = { username: u, pwd: p, asset: { available: 10000 }, orders: [], positions: [], pnl: 0 };
+  saveUser(); alert("注册成功");
+  document.getElementById("regModal").classList.add("hide");
+  refresh();
+};
+
+document.getElementById("doLogin").onclick = () => {
+  let u = document.getElementById("loginUser").value.trim();
+  let p = document.getElementById("loginPwd").value.trim();
+  let local = localStorage.getItem("okx_full");
+  if (!local) return alert("未找到账号");
+  let lu = JSON.parse(local);
+  if (lu.username === u && lu.pwd === p) {
+    user = lu; alert("登录成功");
+    document.getElementById("loginModal").classList.add("hide");
+    refresh();
+  } else {
+    alert("账号或密码错误");
+  }
+};
+
+// 交易
+document.getElementById("longBtn").onclick = () => {
+  if (!user) return alert("请先登录");
+  let amt = +document.getElementById("amount").value;
+  if (amt <= 0) return;
+  let lev = mode === "contract" ? +document.getElementById("lev").value : 1;
+  let cost = price * amt / lev;
+  if (user.asset.available < cost) return alert("余额不足");
+  user.asset.available -= cost;
+  user.orders.unshift({ time: new Date().toLocaleTimeString(), type: mode === "spot" ? "现货" : "合约", dir: "多", amount: amt, price: price });
+  user.positions.push({ dir: "long", dirText: "多", amount: amt, price: price, lev: lev, pnl: 0 });
+  saveUser(); refresh();
+};
+
+document.getElementById("shortBtn").onclick = () => {
+  if (!user) return alert("请先登录");
+  let amt = +document.getElementById("amount").value;
+  if (amt <= 0) return;
+  let lev = mode === "contract" ? +document.getElementById("lev").value : 1;
+  let cost = price * amt / lev;
+  if (user.asset.available < cost) return alert("余额不足");
+  user.asset.available -= cost;
+  user.orders.unshift({ time: new Date().toLocaleTimeString(), type: mode === "spot" ? "现货" : "合约", dir: "空", amount: amt, price: price });
+  user.positions.push({ dir: "short", dirText: "空", amount: amt, price: price, lev: lev, pnl: 0 });
+  saveUser(); refresh();
+};
+</script>
+</body>
+</html>
