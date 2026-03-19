@@ -1,0 +1,1904 @@
+[okx-trade-pro.html](https://github.com/user-attachments/files/26121385/okx-trade-pro.html)
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0B0E11">
+    <meta name="description" content="OKX Pro - 专业数字资产交易平台，支持现货、合约交易">
+    <title>OKX Pro - 专业数字资产交易平台</title>
+    
+    <!-- 外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <style>
+        /* ===== CSS 变量定义 ===== */
+        :root {
+            --bg-primary: #0B0E11;
+            --bg-secondary: #1E2228;
+            --bg-tertiary: #2A2E39;
+            --border-color: #363C49;
+            --text-primary: #E5E9F0;
+            --text-secondary: #9DA3B4;
+            --text-muted: #6B7380;
+            --color-green: #00C48C;
+            --color-red: #F6465D;
+            --color-blue: #165DFF;
+            --color-orange: #FF7D00;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        html { 
+            scroll-behavior: smooth; 
+        }
+        
+        body { 
+            background-color: var(--bg-primary); 
+            color: var(--text-primary); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+        
+        /* 玻璃态效果 */
+        .glass { 
+            background: rgba(30, 34, 40, 0.95); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+        }
+        
+        /* 价格动画 */
+        .price-up { animation: flashGreen 0.5s ease-out; }
+        .price-down { animation: flashRed 0.5s ease-out; }
+        @keyframes flashGreen {
+            0% { background-color: rgba(0, 196, 140, 0.3); }
+            100% { background-color: transparent; }
+        }
+        @keyframes flashRed {
+            0% { background-color: rgba(246, 70, 93, 0.3); }
+            100% { background-color: transparent; }
+        }
+        
+        /* 脉冲动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* 深度图 */
+        .depth-bar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            opacity: 0.15;
+            transition: width 0.3s ease;
+        }
+        .depth-bar.ask { right: 0; background: var(--color-red); }
+        .depth-bar.bid { left: 0; background: var(--color-green); }
+        
+        /* Toast 通知 */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 400px;
+        }
+        
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: linear-gradient(135deg, var(--color-green), #00A376); }
+        .toast.error { background: linear-gradient(135deg, var(--color-red), #D63A4E); }
+        .toast.warning { background: linear-gradient(135deg, var(--color-orange), #E56D00); }
+        .toast.info { background: linear-gradient(135deg, var(--color-blue), #104FD1); }
+        
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal.active { 
+            display: flex; 
+            opacity: 1;
+        }
+        .modal-content { 
+            background: var(--bg-secondary); 
+            border-radius: 16px; 
+            width: 100%; 
+            max-width: 440px; 
+            max-height: 90vh; 
+            overflow-y: auto;
+            transform: scale(0.9) translateY(20px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
+        }
+        .modal.active .modal-content { 
+            transform: scale(1) translateY(0); 
+            opacity: 1; 
+        }
+        
+        /* 输入框 */
+        .input-group { 
+            position: relative; 
+            margin-bottom: 16px; 
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--color-green);
+            box-shadow: 0 0 0 3px rgba(0, 196, 140, 0.1);
+        }
+        .input-group input.error, .input-group select.error {
+            border-color: var(--color-red);
+        }
+        .input-group input.error:focus, .input-group select.error:focus {
+            box-shadow: 0 0 0 3px rgba(246, 70, 93, 0.1);
+        }
+        .input-group .error-msg {
+            color: var(--color-red);
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+        .input-group input.error ~ .error-msg,
+        .input-group select.error ~ .error-msg {
+            display: block;
+        }
+        .input-group .icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        .input-group input.has-icon,
+        .input-group select.has-icon {
+            padding-left: 40px;
+        }
+        .input-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        /* 按钮 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-green), #00A376);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 196, 140, 0.3);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, var(--color-red), #D63A4E);
+            color: white;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.05);
+        }
+        
+        /* 用户菜单 */
+        .user-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            min-width: 220px;
+            padding: 8px 0;
+            display: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 50;
+        }
+        .user-menu.active { display: block; }
+        .user-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+        }
+        .user-menu-item:hover { background: var(--bg-tertiary); }
+        .user-menu-item i {
+            width: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        .user-menu-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 8px 0;
+        }
+        
+        /* 验证码按钮 */
+        .verification-code-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 6px 12px;
+            background: var(--border-color);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .verification-code-btn:hover:not(:disabled) {
+            background: var(--color-green);
+        }
+        .verification-code-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 图表容器 */
+        #chart-container { width: 100%; height: 420px; }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            #chart-container { height: 300px; }
+            .desktop-only { display: none !important; }
+            .modal-content { max-width: 100%; }
+        }
+        @media (min-width: 769px) {
+            .mobile-only { display: none !important; }
+        }
+        
+        /* 加载动画 */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, #363C49 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton 1.5s infinite;
+            border-radius: 4px;
+        }
+        @keyframes skeleton {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* 标签切换 */
+        .tab-switch {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 4px;
+            gap: 4px;
+        }
+        .tab-switch button {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .tab-switch button.active {
+            background: var(--color-green);
+            color: white;
+        }
+        .tab-switch button:hover:not(.active) {
+            color: var(--text-primary);
+        }
+        
+        /* 卡片 */
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-body {
+            padding: 16px;
+        }
+        
+        /* 表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+        .data-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        .data-table tbody tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        .data-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        /* 数字输入框 */
+        .number-input {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .number-input button {
+            padding: 0 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+        .number-input button:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.05);
+        }
+        .number-input input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px;
+            color: var(--text-primary);
+            text-align: center;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 15px;
+        }
+        .number-input input:focus {
+            outline: none;
+        }
+        
+        /* 百分比按钮 */
+        .percent-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .percent-btn {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .percent-btn:hover {
+            border-color: var(--color-green);
+            color: var(--text-primary);
+        }
+        .percent-btn.active {
+            background: rgba(0, 196, 140, 0.1);
+            border-color: var(--color-green);
+            color: var(--color-green);
+        }
+        
+        /* 工具提示 */
+        [data-tooltip] {
+            position: relative;
+        }
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            padding: 6px 12px;
+            background: #000;
+            color: white;
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        [data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- 顶部导航 -->
+    <header class="glass fixed top-0 left-0 right-0 z-50 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-8">
+                <a href="#" class="flex items-center space-x-2 hover:opacity-80 transition">
+                    <div class="w-9 h-9 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                        <span class="text-white font-bold text-sm">OK</span>
+                    </div>
+                    <span class="text-xl font-bold text-white">OKX Pro</span>
+                </a>
+                <nav class="hidden md:flex items-center space-x-1">
+                    <a href="#" class="px-4 py-2 text-white hover:text-green-400 transition rounded-lg hover:bg-white/5">行情</a>
+                    <a href="#" class="px-4 py-2 text-gray-400 hover:text-white transition rounded-lg hover:bg-white/5">交易</a>
+                    <a href="#" class="px-4 py-2 text-gray-400 hover:text-white transition rounded-lg hover:bg-white/5">订单</a>
+                    <a href="#" class="px-4 py-2 text-gray-400 hover:text-white transition rounded-lg hover:bg-white/5">资产</a>
+                </nav>
+            </div>
+            
+            <!-- 右侧操作区 -->
+            <div class="flex items-center space-x-3">
+                <!-- 未登录状态 -->
+                <div id="auth-buttons" class="flex items-center space-x-2">
+                    <button onclick="openModal('login-modal')" class="px-4 py-2 text-gray-300 hover:text-white transition text-sm font-medium">
+                        登录
+                    </button>
+                    <button onclick="openModal('register-modal')" class="px-5 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition shadow-lg shadow-green-500/20">
+                        注册
+                    </button>
+                </div>
+                
+                <!-- 已登录状态 -->
+                <div id="user-section" class="hidden relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-gray-800 px-3 py-2 rounded-xl transition">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg" id="user-avatar">
+                            U
+                        </div>
+                        <span class="text-sm text-white hidden md:block font-medium" id="user-name">User</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </button>
+                    
+                    <div class="user-menu" id="user-menu">
+                        <div class="px-4 py-3 border-b border-gray-700">
+                            <div class="text-white font-bold" id="menu-username">Username</div>
+                            <div class="text-xs text-gray-400 mt-0.5" id="menu-email">user@example.com</div>
+                        </div>
+                        <div class="user-menu-item" onclick="openModal('profile-modal')">
+                            <i class="fas fa-user"></i>
+                            <span>个人中心</span>
+                        </div>
+                        <div class="user-menu-item" onclick="openModal('security-modal')">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>安全设置</span>
+                        </div>
+                        <div class="user-menu-divider"></div>
+                        <div class="user-menu-item text-red-400" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>退出登录</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 登录弹窗 -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">欢迎回来</h2>
+                        <p class="text-gray-400 text-sm mt-1">登录您的 OKX Pro 账号</p>
+                    </div>
+                    <button onclick="closeModal('login-modal')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="input-group">
+                        <label class="input-label">账号</label>
+                        <i class="fas fa-user icon"></i>
+                        <input type="text" id="login-account" class="has-icon" placeholder="用户名 / 邮箱 / 手机号" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">密码</label>
+                        <i class="fas fa-lock icon"></i>
+                        <input type="password" id="login-password" class="has-icon" placeholder="请输入密码" required>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <label class="flex items-center text-gray-400 text-sm cursor-pointer hover:text-gray-300">
+                            <input type="checkbox" id="remember-me" class="mr-2 rounded border-gray-600 bg-gray-700">
+                            记住我
+                        </label>
+                        <a href="#" class="text-green-400 text-sm hover:text-green-300">忘记密码?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary py-3 text-base mb-4">
+                        <i class="fas fa-sign-in-alt"></i>
+                        立即登录
+                    </button>
+                    
+                    <div class="text-center text-sm text-gray-400">
+                        还没有账号? 
+                        <button type="button" onclick="switchModal('login-modal', 'register-modal')" class="text-green-400 hover:text-green-300 font-medium ml-1">立即注册</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册弹窗 -->
+    <div class="modal" id="register-modal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">创建账号</h2>
+                        <p class="text-gray-400 text-sm mt-1">开始您的数字资产交易之旅</p>
+                    </div>
+                    <button onclick="closeModal('register-modal')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="input-group">
+                        <label class="input-label">用户名</label>
+                        <i class="fas fa-user icon"></i>
+                        <input type="text" id="reg-username" class="has-icon" placeholder="3-20位字母、数字或下划线" required>
+                        <div class="error-msg">用户名格式不正确</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">邮箱地址</label>
+                        <i class="fas fa-envelope icon"></i>
+                        <input type="email" id="reg-email" class="has-icon" placeholder="example@email.com" required>
+                        <div class="error-msg">请输入有效的邮箱地址</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">手机号码</label>
+                        <i class="fas fa-phone icon"></i>
+                        <input type="tel" id="reg-phone" class="has-icon" placeholder="11位手机号" required maxlength="11">
+                        <div class="error-msg">请输入有效的手机号</div>
+                    </div>
+                    
+                    <div class="input-group" style="position: relative;">
+                        <label class="input-label">验证码</label>
+                        <i class="fas fa-shield-alt icon"></i>
+                        <input type="text" id="reg-code" class="has-icon" placeholder="6位验证码" required maxlength="6" style="padding-right: 100px;">
+                        <button type="button" class="verification-code-btn" id="send-code-btn" onclick="sendCode()">
+                            获取验证码
+                        </button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">设置密码</label>
+                        <i class="fas fa-lock icon"></i>
+                        <input type="password" id="reg-password" class="has-icon" placeholder="8-20位，建议包含字母和数字" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">确认密码</label>
+                        <i class="fas fa-lock icon"></i>
+                        <input type="password" id="reg-confirm" class="has-icon" placeholder="再次输入密码" required>
+                        <div class="error-msg">两次输入的密码不一致</div>
+                    </div>
+                    
+                    <div class="flex items-start mb-6">
+                        <input type="checkbox" id="agree-terms" class="mt-1 mr-2 rounded border-gray-600 bg-gray-700" required>
+                        <span class="text-gray-400 text-sm">
+                            我已阅读并同意 <a href="#" class="text-green-400 hover:underline">《用户协议》</a> 和 <a href="#" class="text-green-400 hover:underline">《隐私政策》</a>
+                        </span>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary py-3 text-base mb-4">
+                        <i class="fas fa-user-plus"></i>
+                        创建账号
+                    </button>
+                    
+                    <div class="text-center text-sm text-gray-400">
+                        已有账号? 
+                        <button type="button" onclick="switchModal('register-modal', 'login-modal')" class="text-green-400 hover:text-green-300 font-medium ml-1">立即登录</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 个人中心弹窗 -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-white">个人中心</h2>
+                    <button onclick="closeModal('profile-modal')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center mb-6">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold mr-5 shadow-lg" id="profile-avatar">
+                        U
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white" id="profile-username">Username</h3>
+                        <p class="text-gray-400 text-sm" id="profile-email">user@example.com</p>
+                        <span class="inline-flex items-center mt-2 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">
+                            <i class="fas fa-check-circle mr-1.5"></i>已实名认证
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800/50 rounded-xl p-4 mb-4 border border-gray-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-gray-400 text-sm">UID</span>
+                        <span class="text-white text-sm font-mono font-medium" id="profile-uid">12345678</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-sm">注册时间</span>
+                        <span class="text-white text-sm" id="profile-regtime">2024-01-01</span>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                    <h4 class="text-white font-bold mb-4 flex items-center">
+                        <i class="fas fa-shield-alt text-green-400 mr-2"></i>
+                        安全设置
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-envelope text-green-400 mr-3"></i>
+                                <span class="text-sm text-white">邮箱绑定</span>
+                            </div>
+                            <span class="text-green-400 text-sm font-medium">已绑定</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-phone text-green-400 mr-3"></i>
+                                <span class="text-sm text-white">手机绑定</span>
+                            </div>
+                            <span class="text-green-400 text-sm font-medium">已绑定</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-key text-gray-400 mr-3"></i>
+                                <span class="text-sm text-white">登录密码</span>
+                            </div>
+                            <button class="text-green-400 text-sm font-medium hover:text-green-300">修改</button>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-google text-gray-400 mr-3"></i>
+                                <span class="text-sm text-white">谷歌验证器</span>
+                            </div>
+                            <button class="text-green-400 text-sm font-medium hover:text-green-300">去绑定</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <main class="pt-16">
+        <!-- 行情滚动条 -->
+        <div class="bg-gray-900/80 border-b border-gray-800 overflow-x-auto backdrop-blur">
+            <div class="flex space-x-1 px-4 py-2 min-w-max" id="ticker-bar">
+                <!-- 动态生成 -->
+            </div>
+        </div>
+
+        <!-- 交易主界面 -->
+        <div class="max-w-7xl mx-auto p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- 左侧：图表和订单簿 -->
+                <div class="lg:col-span-2 space-y-4">
+                    <!-- 交易对信息卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-2xl shadow-lg">
+                                    <i class="fab fa-bitcoin text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xl font-bold text-white">BTC/USDT</span>
+                                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium">现货</span>
+                                        <span class="px-2 py-0.5 bg-gray-700 text-gray-300 rounded-lg text-xs">10x</span>
+                                    </div>
+                                    <div class="text-sm text-gray-400 mt-0.5">比特币 / 泰达币</div>
+                                </div>
+                            </div>
+                            <div class="hidden md:flex items-center space-x-6 text-sm">
+                                <div class="text-right">
+                                    <div class="text-gray-400 text-xs">24H涨跌</div>
+                                    <div class="text-green-400 font-bold" id="price-change">+2.45%</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-gray-400 text-xs">24H最高</div>
+                                    <div class="text-white font-medium" id="high-24h">59,120.45</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-gray-400 text-xs">24H最低</div>
+                                    <div class="text-white font-medium" id="low-24h">57,890.12</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-gray-400 text-xs">24H成交量</div>
+                                    <div class="text-white font-medium">1,234 BTC</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 价格显示 -->
+                    <div class="card text-center py-6">
+                        <div class="text-5xl font-bold text-green-400 font-mono tracking-tight" id="main-price">58,245.32</div>
+                        <div class="text-sm text-gray-400 mt-2 flex items-center justify-center gap-2">
+                            <span>≈ $58,245.32 USD</span>
+                            <span class="text-gray-600">|</span>
+                            <span class="text-green-400">+2.45%</span>
+                        </div>
+                    </div>
+
+                    <!-- K线图 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="flex items-center space-x-2">
+                                <div class="tab-switch">
+                                    <button class="active" data-tf="1m">1分</button>
+                                    <button data-tf="5m">5分</button>
+                                    <button data-tf="15m">15分</button>
+                                    <button data-tf="1h">1H</button>
+                                    <button data-tf="4h">4H</button>
+                                    <button data-tf="1d">日线</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="btn btn-ghost text-xs" data-ind="ma">MA</button>
+                                <button class="btn btn-ghost text-xs" data-ind="macd">MACD</button>
+                                <button class="btn btn-ghost text-xs" data-ind="rsi">RSI</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="chart-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- 订单簿 -->
+                    <div class="card overflow-hidden">
+                        <div class="card-header">
+                            <h3 class="font-bold text-white">订单簿</h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-gray-400 text-xs">深度</span>
+                                <select class="bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-xs text-white">
+                                    <option>0.01</option>
+                                    <option>0.1</option>
+                                    <option>1</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2">
+                            <!-- 卖单 -->
+                            <div class="border-r border-gray-700">
+                                <div class="grid grid-cols-3 px-4 py-2 text-xs text-gray-500 border-b border-gray-700 bg-gray-800/50">
+                                    <span>价格(USDT)</span>
+                                    <span class="text-right">数量(BTC)</span>
+                                    <span class="text-right">累计</span>
+                                </div>
+                                <div id="asks-list" class="text-sm">
+                                    <!-- 动态生成 -->
+                                </div>
+                            </div>
+                            <!-- 买单 -->
+                            <div>
+                                <div class="grid grid-cols-3 px-4 py-2 text-xs text-gray-500 border-b border-gray-700 bg-gray-800/50">
+                                    <span>价格(USDT)</span>
+                                    <span class="text-right">数量(BTC)</span>
+                                    <span class="text-right">累计</span>
+                                </div>
+                                <div id="bids-list" class="text-sm">
+                                    <!-- 动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 持仓/订单/历史 -->
+                    <div class="card">
+                        <div class="border-b border-gray-700">
+                            <div class="flex">
+                                <button class="flex-1 py-3 text-sm font-bold text-green-400 border-b-2 border-green-400" data-tab="positions">当前持仓</button>
+                                <button class="flex-1 py-3 text-sm font-medium text-gray-400 hover:text-white" data-tab="orders">当前委托</button>
+                                <button class="flex-1 py-3 text-sm font-medium text-gray-400 hover:text-white" data-tab="history">历史成交</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>币种</th>
+                                        <th class="text-right">数量</th>
+                                        <th class="text-right">开仓价</th>
+                                        <th class="text-right">标记价</th>
+                                        <th class="text-right">未实现盈亏</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="positions-list">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-8 text-gray-500">
+                                            <div class="flex flex-col items-center">
+                                                <i class="fas fa-inbox text-4xl mb-3 text-gray-600"></i>
+                                                <p>暂无持仓</p>
+                                                <p class="text-xs mt-1">开始交易吧！</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：交易面板 -->
+                <div class="space-y-4">
+                    <!-- 交易面板 -->
+                    <div class="card sticky top-20">
+                        <div class="p-4">
+                            <!-- 买卖切换 -->
+                            <div class="flex mb-4">
+                                <button id="buy-btn" class="flex-1 py-3 rounded-l-xl bg-green-500 text-white font-bold text-base transition hover:bg-green-600">
+                                    买入
+                                </button>
+                                <button id="sell-btn" class="flex-1 py-3 rounded-r-xl bg-gray-700 text-gray-400 font-bold text-base transition hover:bg-gray-600">
+                                    卖出
+                                </button>
+                            </div>
+
+                            <!-- 订单类型 -->
+                            <div class="tab-switch mb-4">
+                                <button class="active" data-type="limit">限价</button>
+                                <button data-type="market">市价</button>
+                                <button data-type="plan">计划委托</button>
+                            </div>
+
+                            <!-- 价格输入 -->
+                            <div class="mb-4">
+                                <label class="input-label">价格 (USDT)</label>
+                                <div class="number-input">
+                                    <button onclick="adjPrice(-10)"><i class="fas fa-minus text-xs"></i></button>
+                                    <input type="number" id="trade-price" value="58245.32" step="0.01">
+                                    <button onclick="adjPrice(10)"><i class="fas fa-plus text-xs"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- 数量输入 -->
+                            <div class="mb-4">
+                                <label class="input-label">数量 (BTC)</label>
+                                <input type="number" id="trade-amount" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none font-mono text-base" placeholder="0.0000">
+                            </div>
+
+                            <!-- 可用余额 -->
+                            <div class="flex justify-between text-sm mb-3">
+                                <span class="text-gray-400">可用</span>
+                                <span class="text-white font-medium" id="avail-balance">10,000.00 USDT</span>
+                            </div>
+
+                            <!-- 百分比按钮 -->
+                            <div class="percent-buttons mb-4">
+                                <button class="percent-btn" onclick="setPct(25)">25%</button>
+                                <button class="percent-btn" onclick="setPct(50)">50%</button>
+                                <button class="percent-btn" onclick="setPct(75)">75%</button>
+                                <button class="percent-btn" onclick="setPct(100)">100%</button>
+                            </div>
+
+                            <!-- 订单信息 -->
+                            <div class="bg-gray-800/50 rounded-xl p-4 mb-4 space-y-2 text-sm border border-gray-700">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">保证金</span>
+                                    <span class="text-white font-medium" id="margin-required">0.00 USDT</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">手续费 (0.05%)</span>
+                                    <span class="text-white font-medium" id="trade-fee">0.00 USDT</span>
+                                </div>
+                                <div class="flex justify-between pt-2 border-t border-gray-700">
+                                    <span class="text-gray-300 font-medium">预计总额</span>
+                                    <span class="text-white font-bold text-base" id="total-cost">0.00 USDT</span>
+                                </div>
+                            </div>
+
+                            <!-- 下单按钮 -->
+                            <button onclick="placeOrder()" id="order-action-btn" class="w-full py-4 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition transform active:scale-95 shadow-lg shadow-green-500/25 flex items-center justify-center gap-2">
+                                <i class="fas fa-shopping-cart"></i>
+                                买入 BTC
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 资产概览 -->
+                    <div class="card">
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-white">资产概览</h3>
+                                <button class="text-gray-400 hover:text-white" onclick="toggleBalance()">
+                                    <i class="fas fa-eye" id="eye-icon"></i>
+                                </button>
+                            </div>
+                            <div class="text-3xl font-bold text-white mb-1" id="total-asset">10,000.00</div>
+                            <div class="text-sm text-gray-400 mb-4">USDT</div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between py-2 border-b border-gray-700/50">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-xs">U</div>
+                                        <span class="text-sm text-white">USDT</span>
+                                    </div>
+                                    <span class="text-sm text-white font-mono font-medium" id="usdt-bal">10,000.00</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b border-gray-700/50">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-xs">₿</div>
+                                        <span class="text-sm text-white">BTC</span>
+                                    </div>
+                                    <span class="text-sm text-white font-mono font-medium" id="btc-bal">0.0000</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-xs">Ξ</div>
+                                        <span class="text-sm text-white">ETH</span>
+                                    </div>
+                                    <span class="text-sm text-white font-mono font-medium" id="eth-bal">0.0000</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mt-4">
+                                <button class="btn btn-primary py-2 text-sm" onclick="showToast('充值功能开发中', 'warning')">
+                                    <i class="fas fa-arrow-down"></i> 充值
+                                </button>
+                                <button class="btn btn-secondary py-2 text-sm" onclick="showToast('提现功能开发中', 'warning')">
+                                    <i class="fas fa-arrow-up"></i> 提现
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近成交 -->
+                    <div class="card">
+                        <div class="p-4">
+                            <h3 class="font-bold text-white mb-4">最近成交</h3>
+                            <div class="space-y-2 text-sm max-h-64 overflow-y-auto" id="recent-trades">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // ==================== 用户认证系统 (优化版) ====================
+    const Auth = {
+        // 密码加密 (SHA256 + salt)
+        hashPassword(password, salt = 'okx-pro-secure-salt-v1') {
+            return CryptoJS.SHA256(password + salt).toString();
+        },
+        
+        // 生成 UID (8位数字)
+        generateUID() {
+            return Math.floor(10000000 + Math.random() * 90000000).toString();
+        },
+        
+        // 生成记住我令牌
+        generateToken() {
+            return CryptoJS.lib.WordArray.random(32).toString();
+        },
+        
+        // 获取用户数据库
+        getUsers() {
+            try {
+                const users = localStorage.getItem('okx_users_v2');
+                return users ? JSON.parse(users) : {};
+            } catch (e) {
+                console.error('读取用户数据失败:', e);
+                return {};
+            }
+        },
+        
+        // 保存用户数据库
+        saveUsers(users) {
+            try {
+                localStorage.setItem('okx_users_v2', JSON.stringify(users));
+            } catch (e) {
+                console.error('保存用户数据失败:', e);
+                showToast('数据保存失败，请检查浏览器存储空间', 'error');
+            }
+        },
+        
+        // 注册用户
+        register(userData) {
+            const users = this.getUsers();
+            
+            // 验证用户名
+            if (!/^[a-zA-Z0-9_]{3,20}$/.test(userData.username)) {
+                return { success: false, field: 'username', message: '用户名必须为3-20位字母、数字或下划线' };
+            }
+            
+            // 检查用户名是否存在
+            if (users[userData.username]) {
+                return { success: false, field: 'username', message: '用户名已被注册' };
+            }
+            
+            // 验证邮箱
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+                return { success: false, field: 'email', message: '请输入有效的邮箱地址' };
+            }
+            
+            // 检查邮箱是否已存在
+            for (let key in users) {
+                if (users[key].email === userData.email) {
+                    return { success: false, field: 'email', message: '该邮箱已被注册' };
+                }
+            }
+            
+            // 验证手机号
+            if (!/^1[3-9]\d{9}$/.test(userData.phone)) {
+                return { success: false, field: 'phone', message: '请输入有效的11位手机号' };
+            }
+            
+            // 验证密码强度
+            if (userData.password.length < 8) {
+                return { success: false, field: 'password', message: '密码长度至少8位' };
+            }
+            if (!/[a-zA-Z]/.test(userData.password) || !/\d/.test(userData.password)) {
+                return { success: false, field: 'password', message: '密码必须同时包含字母和数字' };
+            }
+            
+            // 创建用户对象
+            const now = new Date().toISOString();
+            const newUser = {
+                uid: this.generateUID(),
+                username: userData.username,
+                email: userData.email,
+                phone: userData.phone,
+                passwordHash: this.hashPassword(userData.password),
+                createdAt: now,
+                lastLogin: null,
+                loginCount: 0,
+                isActive: true,
+                kycStatus: 'verified',
+                kycVerifiedAt: now,
+                twoFactorEnabled: false,
+                avatar: null,
+                preferences: {
+                    theme: 'dark',
+                    language: 'zh-CN',
+                    currency: 'USDT'
+                }
+            };
+            
+            users[userData.username] = newUser;
+            this.saveUsers(users);
+            
+            return { success: true, message: '注册成功', user: newUser };
+        },
+        
+        // 登录
+        login(account, password, remember = false) {
+            const users = this.getUsers();
+            const passwordHash = this.hashPassword(password);
+            
+            // 查找用户（支持用户名/邮箱/手机号）
+            let user = users[account];
+            if (!user) {
+                for (let key in users) {
+                    if (users[key].email === account || users[key].phone === account) {
+                        user = users[key];
+                        break;
+                    }
+                }
+            }
+            
+            if (!user) {
+                return { success: false, message: '账号不存在' };
+            }
+            
+            if (!user.isActive) {
+                return { success: false, message: '账号已被禁用' };
+            }
+            
+            if (user.passwordHash !== passwordHash) {
+                return { success: false, message: '密码错误' };
+            }
+            
+            // 更新登录信息
+            const now = new Date().toISOString();
+            user.lastLogin = now;
+            user.loginCount = (user.loginCount || 0) + 1;
+            users[user.username] = user;
+            this.saveUsers(users);
+            
+            // 创建会话
+            const session = {
+                username: user.username,
+                loginAt: now,
+                token: remember ? this.generateToken() : null
+            };
+            
+            localStorage.setItem('okx_current_session_v2', JSON.stringify(session));
+            
+            if (remember) {
+                localStorage.setItem('okx_remember_token', session.token);
+            }
+            
+            return { success: true, message: '登录成功', user };
+        },
+        
+        // 登出
+        logout() {
+            localStorage.removeItem('okx_current_session_v2');
+            localStorage.removeItem('okx_remember_token');
+            sessionStorage.removeItem('okx_temp_data');
+        },
+        
+        // 获取当前用户
+        getCurrentUser() {
+            const session = localStorage.getItem('okx_current_session_v2');
+            if (!session) return null;
+            
+            try {
+                const sessionData = JSON.parse(session);
+                const users = this.getUsers();
+                return users[sessionData.username] || null;
+            } catch (e) {
+                return null;
+            }
+        },
+        
+        // 检查登录状态
+        isLoggedIn() {
+            return !!this.getCurrentUser();
+        },
+        
+        // 自动登录（记住我功能）
+        autoLogin() {
+            const token = localStorage.getItem('okx_remember_token');
+            if (!token) return null;
+            
+            const session = localStorage.getItem('okx_current_session_v2');
+            if (!session) return null;
+            
+            try {
+                const sessionData = JSON.parse(session);
+                if (sessionData.token === token) {
+                    return this.getCurrentUser();
+                }
+            } catch (e) {
+                return null;
+            }
+            return null;
+        },
+        
+        // 修改密码
+        changePassword(username, oldPassword, newPassword) {
+            const users = this.getUsers();
+            const user = users[username];
+            
+            if (!user) return { success: false, message: '用户不存在' };
+            
+            if (user.passwordHash !== this.hashPassword(oldPassword)) {
+                return { success: false, message: '原密码错误' };
+            }
+            
+            if (newPassword.length < 8) {
+                return { success: false, message: '新密码长度至少8位' };
+            }
+            
+            user.passwordHash = this.hashPassword(newPassword);
+            users[username] = user;
+            this.saveUsers(users);
+            
+            return { success: true, message: '密码修改成功' };
+        },
+        
+        // 更新用户信息
+        updateProfile(username, updates) {
+            const users = this.getUsers();
+            if (!users[username]) return { success: false, message: '用户不存在' };
+            
+            // 只允许更新特定字段
+            const allowedFields = ['avatar', 'preferences'];
+            for (let field of allowedFields) {
+                if (updates[field] !== undefined) {
+                    users[username][field] = updates[field];
+                }
+            }
+            
+            this.saveUsers(users);
+            return { success: true, message: '资料更新成功' };
+        }
+    };
+
+    // ==================== UI 控制 ====================
+    const UI = {
+        // 打开弹窗
+        openModal(modalId) {
+            document.querySelectorAll('.modal').forEach(m => {
+                m.classList.remove('active');
+            });
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        },
+        
+        // 关闭弹窗
+        closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            document.body.style.overflow = '';
+        },
+        
+        // 切换弹窗
+        switchModal(fromId, toId) {
+            this.closeModal(fromId);
+            setTimeout(() => this.openModal(toId), 150);
+        },
+        
+        // 切换用户菜单
+        toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            if (menu) {
+                menu.classList.toggle('active');
+            }
+        },
+        
+        // 更新登录后的UI
+        updateUIForLogin(user) {
+            document.getElementById('auth-buttons')?.classList.add('hidden');
+            document.getElementById('user-section')?.classList.remove('hidden');
+            
+            // 更新显示信息
+            const elements = {
+                'user-name': user.username,
+                'menu-username': user.username,
+                'menu-email': user.email,
+                'profile-username': user.username,
+                'profile-email': user.email,
+                'profile-uid': user.uid,
+                'profile-regtime': new Date(user.createdAt).toLocaleDateString('zh-CN')
+            };
+            
+            for (let [id, value] of Object.entries(elements)) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            }
+            
+            // 更新头像
+            const initial = user.username.charAt(0).toUpperCase();
+            document.getElementById('user-avatar').textContent = initial;
+            document.getElementById('profile-avatar').textContent = initial;
+        },
+        
+        // 更新登出后的UI
+        updateUIForLogout() {
+            document.getElementById('auth-buttons')?.classList.remove('hidden');
+            document.getElementById('user-section')?.classList.add('hidden');
+            document.getElementById('user-menu')?.classList.remove('active');
+        }
+    };
+
+    // ==================== 全局函数 ====================
+    function openModal(modalId) { UI.openModal(modalId); }
+    function closeModal(modalId) { UI.closeModal(modalId); }
+    function switchModal(fromId, toId) { UI.switchModal(fromId, toId); }
+    function toggleUserMenu() { UI.toggleUserMenu(); }
+
+    // 验证码倒计时
+    let codeTimer = null;
+    function sendCode() {
+        const btn = document.getElementById('send-code-btn');
+        const phone = document.getElementById('reg-phone')?.value;
+        
+        if (!phone) {
+            showToast('请先输入手机号', 'error');
+            document.getElementById('reg-phone')?.focus();
+            return;
+        }
+        
+        if (!/^1[3-9]\d{9}$/.test(phone)) {
+            showToast('请输入有效的11位手机号', 'error');
+            return;
+        }
+        
+        // 模拟发送验证码
+        showToast('验证码已发送: 123456', 'success');
+        
+        let seconds = 60;
+        btn.disabled = true;
+        btn.textContent = seconds + 's';
+        
+        codeTimer = setInterval(() => {
+            seconds--;
+            if (seconds <= 0) {
+                clearInterval(codeTimer);
+                btn.disabled = false;
+                btn.textContent = '获取验证码';
+            } else {
+                btn.textContent = seconds + 's';
+            }
+        }, 1000);
+    }
+
+    // 注册处理
+    function handleRegister(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('reg-username')?.value.trim();
+        const email = document.getElementById('reg-email')?.value.trim();
+        const phone = document.getElementById('reg-phone')?.value.trim();
+        const code = document.getElementById('reg-code')?.value.trim();
+        const password = document.getElementById('reg-password')?.value;
+        const confirm = document.getElementById('reg-confirm')?.value;
+        const agreeTerms = document.getElementById('agree-terms')?.checked;
+        
+        if (!agreeTerms) {
+            showToast('请同意用户协议和隐私政策', 'warning');
+            return;
+        }
+        
+        if (code !== '123456') {
+            showToast('验证码错误', 'error');
+            return;
+        }
+        
+        if (password !== confirm) {
+            showToast('两次输入的密码不一致', 'error');
+            document.getElementById('reg-confirm')?.classList.add('error');
+            return;
+        }
+        
+        const result = Auth.register({ username, email, phone, password });
+        
+        if (result.success) {
+            showToast('🎉 注册成功！请登录', 'success');
+            switchModal('register-modal', 'login-modal');
+            document.getElementById('register-form')?.reset();
+        } else {
+            showToast(result.message, 'error');
+            const field = document.getElementById('reg-' + result.field);
+            if (field) field.classList.add('error');
+        }
+    }
+
+    // 登录处理
+    function handleLogin(e) {
+        e.preventDefault();
+        
+        const account = document.getElementById('login-account')?.value.trim();
+        const password = document.getElementById('login-password')?.value;
+        const remember = document.getElementById('remember-me')?.checked;
+        
+        if (!account || !password) {
+            showToast('请输入账号和密码', 'warning');
+            return;
+        }
+        
+        const result = Auth.login(account, password, remember);
+        
+        if (result.success) {
+            showToast('👋 欢迎回来，' + result.user.username, 'success');
+            closeModal('login-modal');
+            UI.updateUIForLogin(result.user);
+            document.getElementById('login-form')?.reset();
+        } else {
+            showToast(result.message, 'error');
+        }
+    }
+
+    // 登出
+    function logout() {
+        Auth.logout();
+        showToast('已安全退出', 'info');
+        UI.updateUIForLogout();
+    }
+
+    // Toast 通知
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        toast.innerHTML = '<i class="fas fa-' + icons[type] + '"></i><span>' + message + '</span>';
+        
+        container.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ==================== 交易功能 ====================
+    const Trading = {
+        state: {
+            pair: 'BTC/USDT',
+            price: 58245.32,
+            side: 'buy',
+            orderType: 'limit',
+            balance: { USDT: 10000, BTC: 0, ETH: 0 },
+            positions: [],
+            sliderValue: 0
+        },
+        
+        // 初始化
+        init() {
+            this.initChart();
+            this.initOrderBook();
+            this.initTicker();
+            this.initEventListeners();
+            this.startSimulation();
+            this.updateUI();
+        },
+        
+        // 初始化图表
+        initChart() {
+            const chartContainer = document.getElementById('chart-container');
+            if (!chartContainer || typeof LightweightCharts === 'undefined') return;
+            
+            try {
+                const chart = LightweightCharts.createChart(chartContainer, {
+                    layout: {
+                        background: { type: 'solid', color: 'transparent' },
+                        textColor: '#9DA3B4',
+                        fontSize: 12
+                    },
+                    grid: {
+                        vertLines: { color: 'rgba(42, 46, 57, 0.6)' },
+                        horzLines: { color: 'rgba(42, 46, 57, 0.6)' }
+                    },
+                    crosshair: {
+                        mode: LightweightCharts.CrosshairMode.Normal,
+                        vertLine: { color: '#758696', width: 1, style: 2 },
+                        horzLine: { color: '#758696', width: 1, style: 2 }
+                    },
+                    rightPriceScale: {
+                        borderColor: '#2A2E39',
+                        scaleMargins: { top: 0.1, bottom: 0.1 }
+                    },
+                    timeScale: {
+                        borderColor: '#2A2E39',
+                        timeVisible: true,
+                        secondsVisible: false
+                    },
+                    handleScroll: { vertTouchDrag: false }
+                });
+                
+                const candleSeries = chart.addCandlestickSeries({
+                    upColor: '#00C48C',
+                    downColor: '#F6465D',
+                    borderUpColor: '#00C48C',
+                    borderDownColor: '#F6465D',
+                    wickUpColor: '#00C48C',
+                    wickDownColor: '#F6465D'
+                });
+                
+                // 生成模拟K线数据
+                const data = this.generateCandleData();
+                candleSeries.setData(data);
+                chart.timeScale().fitContent();
+                
+                // 响应式
+                window.addEventListener('resize', () => {
+                    chart.applyOptions({ width: chartContainer.clientWidth });
+                });
+                
+                this.chart = chart;
+                this.candleSeries = candleSeries;
+            } catch (e) {
+                console.error('图表初始化失败:', e);
+            }
+        },
+        
+        // 生成模拟K线数据
+        generateCandleData() {
+            const data = [];
+            let price = 58000;
+            const now = new Date();
+            
+            for (let i = 100; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 60000);
+                const open = price;
+                const change = (Math.random() - 0.5) * 200;
+                const close = price + change;
+                const high = Math.max(open, close) + Math.random() * 100;
+                const low = Math.min(open, close) - Math.random() * 100;
+                
+                data.push({
+                    time: time.getTime() / 1000,
+                    open, high, low, close
+                });
+                price = close;
+            }
+            return data;
+        },
+        
+        // 初始化订单簿
+        initOrderBook() {
+            this.updateOrderBook();
+        },
+        
+        // 更新订单簿
+        updateOrderBook() {
+            const asksList = document.getElementById('asks-list');
+            const bidsList = document.getElementById('bids-list');
+            if (!asksList || !bidsList) return;
+            
+            const basePrice = this.state.price;
+            let asksHtml = '';
+            let bidsHtml = '';
+            
+            // 生成卖单（红色）
+            for (let i = 8; i >= 1; i--) {
+                const price = (basePrice + i * 10 + Math.random() * 5).toFixed(2);
+                const amount = (Math.random() * 2 + 0.1).toFixed(4);
+                const total = (parseFloat(price) * parseFloat(amount)).toFixed(2);
+                const width = Math.random() * 60 + 20;
+                
+                asksHtml += '<div class="grid grid-cols-3 px-4 py-1.5 hover:bg-white/5 relative cursor-pointer transition">' +
+                    '<div class="depth-bar ask" style="width: ' + width + '%"></div>' +
+                    '<span class="text-red-400 relative font-mono text-xs">' + price + '</span>' +
+                    '<span class="text-right relative text-xs">' + amount + '</span>' +
+                    '<span class="text-right relative text-gray-500 text-xs">' + total + '</span>' +
+                '</div>';
+            }
+            
+            // 生成买单（绿色）
+            for (let i = 1; i <= 8; i++) {
+                const price = (basePrice - i * 10 - Math.random() * 5).toFixed(2);
+                const amount = (Math.random() * 2 + 0.1).toFixed(4);
+                const total = (parseFloat(price) * parseFloat(amount)).toFixed(2);
+                const width = Math.random() * 60 + 20;
+                
+                bidsHtml += '<div class="grid grid-cols-3 px-4 py-1.5 hover:bg-white/5 relative cursor-pointer transition">' +
+                    '<div class="depth-bar bid" style="width: ' + width + '%"></div>' +
+                    '<span class="text-green-400 relative font-mono text-xs">' + price + '</span>' +
+                    '<span class="text-right relative text-xs">' + amount + '</span>' +
+                    '<span class="text-right relative text-gray-500 text-xs">' + total + '</span>' +
+                '</div>';
+            }
+            
+            asksList.innerHTML = asksHtml;
+            bidsList.innerHTML = bidsHtml;
+        },
+        
+        // 初始化行情滚动条
+        initTicker() {
+            const tickerBar = document.getElementById('ticker-bar');
+            if (!tickerBar) return;
+            
+            const pairs = [
+                { name: 'BTC/USDT', price: 58245.32, change: 2.45 },
+                { name: 'ETH/USDT', price: 3245.67, change: -1.23 },
+                { name: 'SOL/USDT', price: 138.45, change: 5.67 },
+                { name: 'BNB/USDT', price: 612.34, change: 1.89 },
+                { name: 'XRP/USDT', price: 0.6234, change: -0.85 },
+                { name: 'DOGE/USDT', price: 0.1234, change: 3.21 },
+                { name: 'ADA/USDT', price: 0.4567, change: -2.15 },
+                { name: 'DOT/USDT', price: 7.89, change: 0.95 }
+            ];
+            
+            let html = '';
+            pairs.forEach(p => {
+                const color = p.change >= 0 ? 'text-green-400' : 'text-red-400';
+                const sign = p.change >= 0 ? '+' : '';
+                html += '<div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition">' +
+                    '<span class="font-bold text-white text-sm">' + p.name.split('/')[0] + '</span>' +
+                    '<span class="' + color + ' font-mono text-sm font-medium">' + p.price.toLocaleString() + '</span>' +
+                    '<span class="' + color + ' text-xs">' + sign + p.change + '%</span>' +
+                '</div>';
+            });
+            
+            tickerBar.innerHTML = html;
+        },
+        
+        // 初始化事件监听
+        initEventListeners() {
+            // 买卖切换
+            document.getElementById('buy-btn')?.addEventListener('click', () => this.setSide('buy'));
+            document.getElementById('sell-btn')?.addEventListener('click', () => this.setSide('sell'));
+            
+            // 数量输入监听
+            document.getElementById('trade-amount')?.addEventListener('input', () => this.calcOrder());
+            
+            // 时间周期切换
+            document.querySelectorAll('[data-tf]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('[data-tf]').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+        },
+        
+        // 设置买卖方向
+        setSide(side) {
+            this.state.side = side;
+            const buyBtn = document.getElementById('buy-btn');
+            const sellBtn = document.getElementById('sell-btn');
+            const actionBtn = document.getElementById('order-action-btn');
+            
+            if (side === 'buy') {
+                buyBtn.className = 'flex-1 py-3 rounded-l-xl bg-green-500 text-white font-bold text-base transition hover:bg-green-600';
+                sellBtn.className = 'flex-1 py-3 rounded-r-xl bg-gray-700 text-gray-400 font-bold text-base transition hover:bg-gray-600';
+                actionBtn.className = 'w-full py-4 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition transform active:scale-95 shadow-lg shadow-green-500/25 flex items-center justify-center gap-2';
+                actionBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> 买入 BTC';
+            } else {
+                buyBtn.className = 'flex-1 py-3 rounded-l-xl bg-gray-700 text-gray-400 font-bold text-base transition hover:bg-gray-600';
+                sellBtn.className = 'flex-1 py-3 rounded-r-xl bg-red-500 text-white font-bold text-base transition hover:bg-red-600';
+                actionBtn.className = 'w-full py-4 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition transform active:scale-95 shadow-lg shadow-red-500/25 flex items-center justify-center gap-2';
+                actionBtn.innerHTML = '<i class="fas fa-coins"></i> 卖出 BTC';
+            }
+            this.calcOrder();
+        },
+        
+        // 开始价格模拟
+        startSimulation() {
+            setInterval(() => this.simulatePrice(), 2000);
+            setInterval(() => this.updateOrderBook(), 1000);
+        },
+        
+        // 模拟价格变动
+        simulatePrice() {
+            const change = (Math.random() - 0.5) * 50;
+            this.state.price += change;
+            
+            const priceEl = document.getElementById('main-price');
+            if (priceEl) {
+                priceEl.textContent = this.state.price.toFixed(2);
+                priceEl.className = 'text-5xl font-bold font-mono tracking-tight ' + (change >= 0 ? 'text-green-400 price-up' : 'text-red-400 price-down');
+                
+                setTimeout(() => {
+                    priceEl.classList.remove('price-up', 'price-down');
+                }, 500);
+            }
+        },
+        
+        // 计算订单
+        calcOrder() {
+            const price = parseFloat(document.getElementById('trade-price')?.value) || 0;
+            const amount = parseFloat(document.getElementById('trade-amount')?.value) || 0;
+            const total = price * amount;
+            const fee = total * 0.0005;
+            
+            document.getElementById('trade-fee').textContent = fee.toFixed(2) + ' USDT';
+            document.getElementById('total-cost').textContent = total.toFixed(2) + ' USDT';
+            document.getElementById('margin-required').textContent = (total * 0.1).toFixed(2) + ' USDT';
+        },
+        
+        // 设置百分比
+        setPct(pct) {
+            document.querySelectorAll('.percent-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const price = parseFloat(document.getElementById('trade-price')?.value) || 0;
+            const maxAmount = this.state.balance.USDT / price * (pct / 100);
+            document.getElementById('trade-amount').value = maxAmount.toFixed(4);
+            this.calcOrder();
+        },
+        
+        // 调整价格
+        adjPrice(delta) {
+            const input = document.getElementById('trade-price');
+            if (input) {
+                input.value = (parseFloat(input.value) + delta).toFixed(2);
+                this.calcOrder();
+            }
+        },
+        
+        // 下单
+        placeOrder() {
+            if (!Auth.isLoggedIn()) {
+                showToast('请先登录', 'warning');
+                openModal('login-modal');
+                return;
+            }
+            
+            const price = parseFloat(document.getElementById('trade-price')?.value);
+            const amount = parseFloat(document.getElementById('trade-amount')?.value);
+            
+            if (!amount || amount <= 0) {
+                showToast('请输入有效的数量', 'error');
+                return;
+            }
+            
+            const total = price * amount;
+            const fee = total * 0.0005;
+            
+            if (this.state.side === 'buy') {
+                if (total + fee > this.state.balance.USDT) {
+                    showToast('USDT 余额不足', 'error');
+                    return;
+                }
+                this.state.balance.USDT -= (total + fee);
+                this.state.balance.BTC += amount;
+                showToast('✅ 买入成功 ' + amount.toFixed(4) + ' BTC @ ' + price.toFixed(2), 'success');
+            } else {
+                if (amount > this.state.balance.BTC) {
+                    showToast('BTC 余额不足', 'error');
+                    return;
+                }
+                this.state.balance.BTC -= amount;
+                this.state.balance.USDT += (total - fee);
+                showToast('✅ 卖出成功 ' + amount.toFixed(4) + ' BTC @ ' + price.toFixed(2), 'success');
+            }
+            
+            this.updateUI();
+        },
+        
+        // 更新UI
+        updateUI() {
+            document.getElementById('usdt-bal').textContent = this.state.balance.USDT.toFixed(2);
+            document.getElementById('btc-bal').textContent = this.state.balance.BTC.toFixed(4);
+            document.getElementById('total-asset').textContent = this.state.balance.USDT.toFixed(2);
+            document.getElementById('avail-balance').textContent = this.state.balance.USDT.toFixed(2) + ' USDT';
+        }
+    };
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        // 初始化交易模块
+        Trading.init();
+        
+        // 检查自动登录
+        const user = Auth.autoLogin() || Auth.getCurrentUser();
+        if (user) {
+            UI.updateUIForLogin(user);
+        }
+        
+        // 点击外部关闭菜单
+        document.addEventListener('click', (e) => {
+            const userSection = document.getElementById('user-section');
+            if (userSection && !userSection.contains(e.target)) {
+                document.getElementById('user-menu')?.classList.remove('active');
+            }
+        });
+        
+        // ESC 关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+                document.body.style.overflow = '';
+            }
+        });
+    });
+
+    // 全局辅助函数
+    function setPct(pct) { Trading.setPct(pct); }
+    function adjPrice(delta) { Trading.adjPrice(delta); }
+    function placeOrder() { Trading.placeOrder(); }
+    function toggleBalance() {
+        showToast('切换余额显示', 'info');
+    }
+    </script>
+</body>
+</html>
